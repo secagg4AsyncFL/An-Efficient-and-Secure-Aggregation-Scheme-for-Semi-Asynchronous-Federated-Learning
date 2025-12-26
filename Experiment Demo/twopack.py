@@ -287,7 +287,7 @@ class TwoPack:
         
         self.rlwe = RLWEEncryption(poly_degree, plain_modulus, cipher_modulus)
         
-        # self.flops_counter = self.FlopsCounter()
+        self.flops_counter = self.FlopsCounter()
     
     class FlopsCounter:
         def __init__(self):
@@ -302,6 +302,8 @@ class TwoPack:
             print(f"  Decryption FLOPs:     {self.decrypt:,}")
             print(f"  Aggregation FLOPs:     {self.aggregate:,}")
             print(f"  Total FLOPs:       {self.total():,}")
+
+
 
     def pack_and_encrypt(self, gradients: np.ndarray) -> List[Tuple[np.ndarray, np.ndarray]]:
         # Quantize gradients to integers (16-bit quantization as in paper)
