@@ -13,7 +13,7 @@ def timing_decorator(func):
         result = func(*args, **kwargs)
         end_time = time.time()
         execution_time = end_time - start_time
-        print(f"{func.__name__} 执行时间: {execution_time:.4f} 秒")
+        print(f"{func.__name__} execution time: {execution_time:.4f} seconds")
         return result
     return wrapper
 
@@ -36,7 +36,6 @@ def load_matrices_from_npz(file_path):
 
 
 
-# ============ FLOPs 理论统计 ============
 class FlopsCounter:
     def __init__(self, name=""):
         self.name = name
@@ -46,13 +45,13 @@ class FlopsCounter:
     def total(self):
         return self.encrypt + self.decrypt + self.aggregate
     def report(self):
-        print(f"\n[理论 FLOPs 统计 - {self.name}]")
-        print(f"  加密 FLOPs:     {self.encrypt:,}")
-        print(f"  解密 FLOPs:     {self.decrypt:,}")
-        print(f"  聚合 FLOPs:     {self.aggregate:,}")
-        print(f"  总 FLOPs:       {self.total():,}")
+        print(f"\n[Theoretical FLOPs Statistics - {self.name}]")
+        print(f"  Encryption FLOPs:     {self.encrypt:,}")
+        print(f"  Decryption FLOPs:     {self.decrypt:,}")
+        print(f"  Aggregation FLOPs:     {self.aggregate:,}")
+        print(f"  Total FLOPs:       {self.total():,}")
 
-# 分别为 OU 和 ZPaillier 创建计数器
+# Create counters for OU and ZPaillier respectively
 flops_counter_OU = FlopsCounter("OU")
 flops_counter_ZP = FlopsCounter("ZPaillier")
 
@@ -64,7 +63,6 @@ def encrypt_matrices(matrices, encryptor, kit, flops_counter=None):
         tempArr = kit.array(matrix.reshape(-1), phe.FloatEncoderParams())
         encrypted_matrix = encryptor.encrypt(tempArr)
         encrypted_matrices.append(encrypted_matrix)
-        # FLOPs统计：每个元素加密约2次乘法
         if flops_counter:
             flops_counter.encrypt += 2 * tempArr.size
     return encrypted_matrices
@@ -73,7 +71,6 @@ def encrypt_matrices(matrices, encryptor, kit, flops_counter=None):
 @timing_decorator
 def decrypt_matrix(encrypted_matrix, decryptor, flops_counter=None):
     decrypted = decryptor.decrypt(encrypted_matrix)
-    # FLOPs统计：每个元素解密约2次乘法
     if flops_counter:
         if hasattr(decrypted, 'size'):
             flops_counter.decrypt += 2 * decrypted.size
@@ -85,7 +82,6 @@ def decrypt_matrix(encrypted_matrix, decryptor, flops_counter=None):
 @timing_decorator
 def homomorphic_addition(encrypted_matrix1, encrypted_matrix2, evaluator, flops_counter=None):
     result = evaluator.add(encrypted_matrix1, encrypted_matrix2)
-    # FLOPs统计：每个元素加法1次
     if flops_counter:
         if hasattr(encrypted_matrix1, 'size'):
             flops_counter.aggregate += encrypted_matrix1.size
@@ -109,14 +105,14 @@ def main():
     OU_encrypted_matrices2 = encrypt_matrices(matrices2, OU_encryptor, OU_kit, flops_counter_OU)
     end_time = time.time()
     execution_time = end_time - start_time
-    print(f"OU加密时间: {execution_time:.4f} 秒")
+    print(f"OU encryption time: {execution_time:.4f} seconds")
 
     start_time = time.time()    
     ZP_encrypted_matrices1 = encrypt_matrices(matrices1, ZP_encryptor, ZP_kit, flops_counter_ZP)
     ZP_encrypted_matrices2 = encrypt_matrices(matrices2, ZP_encryptor, ZP_kit, flops_counter_ZP)
     end_time = time.time()
     execution_time = end_time - start_time
-    print(f"ZPaillier加密时间: {execution_time:.4f} 秒")
+    print(f"ZPaillier encryption time: {execution_time:.4f} seconds")
 
 
     start_time = time.time()
@@ -126,7 +122,7 @@ def main():
         OU_result_encrypted_matrices.append(OU_result_encrypted)
     end_time = time.time()
     execution_time = end_time - start_time
-    print(f"OU聚合时间: {execution_time:.4f} 秒")
+    print(f"OU aggregation time: {execution_time:.4f} seconds")
 
     start_time = time.time()
     ZP_result_encrypted_matrices = []
@@ -135,23 +131,22 @@ def main():
         ZP_result_encrypted_matrices.append(ZP_result_encrypted)
     end_time = time.time()
     execution_time = end_time - start_time
-    print(f"ZPaillier聚合时间: {execution_time:.4f} 秒")
+    print(f"ZPaillier aggregation time: {execution_time:.4f} seconds")
 
 
     start_time = time.time()
     OU_decrypted_matrices = [decrypt_matrix(enc_mat, OU_decryptor, flops_counter_OU) for enc_mat in OU_result_encrypted_matrices]
     end_time = time.time()
     execution_time = end_time - start_time
-    print(f"OU解密时间: {execution_time:.4f} 秒")
+    print(f"OU decryption time: {execution_time:.4f} seconds")
 
     start_time = time.time()
     ZP_decrypted_matrices = [decrypt_matrix(enc_mat, ZP_decryptor, flops_counter_ZP) for enc_mat in ZP_result_encrypted_matrices]
     end_time = time.time()
     execution_time = end_time - start_time
-    print(f"ZPaillier解密时间: {execution_time:.4f} 秒")
+    print(f"ZPaillier decryption time: {execution_time:.4f} seconds")
 
 
-    # 分别输出 OU 和 ZPaillier 的 FLOPs 统计
     flops_counter_OU.report()
     flops_counter_ZP.report()
 

@@ -20,11 +20,11 @@ class FlopsCounter:
     def total(self):
         return self.encrypt + self.decrypt + self.aggregate
     def report(self):
-        print(f"\n[理论 FLOPs 统计]")
-        print(f"  加密 FLOPs:     {self.encrypt:,}")
-        print(f"  解密 FLOPs:     {self.decrypt:,}")
-        print(f"  聚合 FLOPs:     {self.aggregate:,}")
-        print(f"  总 FLOPs:       {self.total():,}")
+        print(f"\n[Theoretical FLOPs Statistics]")
+        print(f"  Encryption FLOPs:     {self.encrypt:,}")
+        print(f"  Decryption FLOPs:     {self.decrypt:,}")
+        print(f"  Aggregation FLOPs:     {self.aggregate:,}")
+        print(f"  Total FLOPs:       {self.total():,}")
 
 flops_counter = FlopsCounter()
 
@@ -40,14 +40,12 @@ def encrypt_matrices(matrices, context):
     for matrix in matrices:
         encrypted_matrix = ts.ckks_vector(context, matrix.reshape(-1))
         encrypted_matrices.append(encrypted_matrix)
-        # FLOPs统计：每个元素加密约2次乘法
         flops_counter.encrypt += 2 * matrix.size
     return encrypted_matrices
 
 
 def decrypt_matrix(encrypted_matrix):
     decrypted = encrypted_matrix.decrypt()
-    # FLOPs统计：每个元素解密约2次乘法
     if hasattr(decrypted, '__len__'):
         flops_counter.decrypt += 2 * len(decrypted)
     return decrypted
@@ -55,7 +53,6 @@ def decrypt_matrix(encrypted_matrix):
 
 def homomorphic_addition(encrypted_matrix1, encrypted_matrix2):
     result = encrypted_matrix1 + encrypted_matrix2
-    # FLOPs统计：每个元素加法1次
     if hasattr(encrypted_matrix1, 'size'):
         flops_counter.aggregate += encrypted_matrix1.size
     return result
@@ -75,7 +72,7 @@ def main():
     encrypted_matrices2 = encrypt_matrices(matrices2, context)
     end_time = time.time()
     execution_time = end_time - start_time
-    print(f"加密时间: {execution_time:.4f} 秒")
+    print(f"Encryption Time: {execution_time:.4f} seconds")
 
 
     start_time = time.time()
@@ -85,21 +82,16 @@ def main():
         result_encrypted_matrices.append(result_encrypted)
     end_time = time.time()
     execution_time = end_time - start_time
-    print(f"聚合时间: {execution_time:.4f} 秒")
+    print(f"Aggregation Time: {execution_time:.4f} seconds")
 
-    # 解密结果
     start_time = time.time()
     decrypted_matrices = [decrypt_matrix(enc_mat) for enc_mat in result_encrypted_matrices]
     end_time = time.time()
     execution_time = end_time - start_time
-    print(f"解密时间: {execution_time:.4f} 秒")
-    # # 打印解密后的结果
-    # for i, decrypted_matrix in enumerate(decrypted_matrices):
-    #     print(f"Decrypted Matrix {i+1}:\n{decrypted_matrix}")
+    print(f"Decryption Time: {execution_time:.4f} seconds")
 
-    # 在 main() 性能总结后输出 FLOPs
-    print("\n[理论 FLOPs 统计]")
-    flops_counter.report()
+    # print("\n[Theoretical FLOPs Statistics]")
+    # flops_counter.report()
 
 if __name__ == "__main__":
     main()

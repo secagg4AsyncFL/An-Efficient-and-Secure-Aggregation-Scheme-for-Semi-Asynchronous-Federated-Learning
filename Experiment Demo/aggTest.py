@@ -20,19 +20,16 @@ class SecureAggregationSystem:
         self.client_public_keys = {}
         self.shared_keys = {}
         self.lock = threading.Lock()
-        self.round_stats = []  # 存储每轮的统计数据
+        self.round_stats = []  
         
-        # 设置日志记录
         logging.basicConfig(level=logging.INFO,
                           format='%(asctime)s - %(levelname)s - %(message)s',
                           datefmt='%Y-%m-%d %H:%M:%S.%f')
     
     def key_to_float(self, key_bytes):
-        """将密钥转换为浮点数"""
         return struct.unpack('!f', key_bytes[:4])[0]
     
     def generate_new_mask(self, old_mask):
-        """生成新的掩码"""
         start_time = time.time_ns()
         
         random_bytes = os.urandom(32)
@@ -45,7 +42,6 @@ class SecureAggregationSystem:
         return new_mask, (end_time - start_time) / 1000
     
     def client_key_exchange(self, client_id):
-        """客户端密钥协商"""
         start_time = time.time_ns()
         
         private_key = self.parameters.generate_private_key()
@@ -68,7 +64,6 @@ class SecureAggregationSystem:
         return (end_time - start_time) / 1000
     
     def encrypt_gradients(self, client_id, input_file, round_num):
-        """加密梯度"""
         start_time = time.time_ns()
         
         gradients = np.load(input_file)
@@ -87,7 +82,6 @@ class SecureAggregationSystem:
         return (end_time - start_time) / 1000
     
     def aggregate_gradients(self, round_num):
-        """聚合特定轮次的所有客户端加密梯度"""
         start_time = time.time_ns()
         
         # base_gradients = np.load(f'client_0_round_{round_num}_encrypted.npz')
@@ -106,7 +100,6 @@ class SecureAggregationSystem:
         return (end_time - start_time) / 1000
 
     def update_all_masks(self):
-        """更新所有客户端的掩码并测量时间"""
         start_time = time.time_ns()
         mask_update_times = []
         
@@ -114,7 +107,7 @@ class SecureAggregationSystem:
             new_mask, update_time = self.generate_new_mask(self.shared_keys[client_id])
             self.shared_keys[client_id] = new_mask
             mask_update_times.append(update_time)
-            logging.info(f"客户端 {client_id} 完成掩码更新，耗时 {update_time:.2f} 微秒")
+            logging.info(f"Client {client_id} completed mask update, time taken {update_time:.2f} microseconds")
         
         end_time = time.time_ns()
         total_time = (end_time - start_time) / 1000
@@ -126,11 +119,9 @@ class SecureAggregationSystem:
         }
 
     def run_round(self, round_num, current_system_time):
-        """运行单轮聚合"""
-        logging.info(f"\n开始第 {round_num + 1} 轮聚合")
+        logging.info(f"\nStarting aggregation round {round_num + 1}")
         round_start_time = time.time_ns()
         
-        # 多线程进行梯度加密
         encryption_times = []
         with concurrent.futures.ThreadPoolExecutor(max_workers=self.num_clients) as executor:
             future_to_client = {
@@ -142,22 +133,19 @@ class SecureAggregationSystem:
                 try:
                     time_taken = future.result()
                     encryption_times.append(time_taken)
-                    logging.info(f"轮次 {round_num + 1}: 客户端 {client_id} 完成梯度加密，耗时 {time_taken:.2f} 微秒")
+                    logging.info(f"Round {round_num + 1}: Client {client_id} completed gradient encryption, time taken {time_taken:.2f} microseconds")
                 except Exception as e:
-                    logging.error(f"轮次 {round_num + 1}: 客户端 {client_id} 梯度加密失败: {str(e)}")
+                    logging.error(f"Round {round_num + 1}: Client {client_id} gradient encryption failed: {str(e)}")
         
-        # 执行梯度聚合
         aggregation_time = self.aggregate_gradients(round_num)
-        logging.info(f"轮次 {round_num + 1}: 梯度聚合完成，耗时 {aggregation_time:.2f} 微秒")
+        logging.info(f"Round {round_num + 1}: Gradient aggregation completed, time taken {aggregation_time:.2f} microseconds")
         
-        # 更新所有掩码并测量时间
         mask_update_stats = self.update_all_masks()
-        logging.info(f"轮次 {round_num + 1}: 所有掩码更新完成，总耗时 {mask_update_stats['total_time']:.2f} 微秒")
+        logging.info(f"Round {round_num + 1}: All mask updates completed, total time taken {mask_update_stats['total_time']:.2f} microseconds")
         
         round_end_time = time.time_ns()
         round_total_time = (round_end_time - round_start_time) / 1000
         current_system_time = current_system_time + round_total_time
-        # 返回本轮统计数据
         return {
             'round_number': round_num + 1,
             'encryption_total_time': sum(encryption_times),
@@ -170,11 +158,9 @@ class SecureAggregationSystem:
         }
 
     def run_system(self):
-        """运行整个系统"""
         system_start_time = time.time_ns()
-        logging.info(f"开始运行安全聚合系统，总轮次: {self.num_rounds}")
+        logging.info(f"Starting secure aggregation system, total rounds: {self.num_rounds}")
         current_system_time = 0
-        # 初始密钥协商
         key_exchange_times = []
         with concurrent.futures.ThreadPoolExecutor(max_workers=self.num_clients) as executor:
             future_to_client = {
@@ -186,9 +172,9 @@ class SecureAggregationSystem:
                 try:
                     time_taken = future.result()
                     key_exchange_times.append(time_taken)
-                    logging.info(f"客户端 {client_id} 完成密钥协商，耗时 {time_taken:.2f} 微秒")
+                    logging.info(f"Client {client_id} completed key exchange, time taken {time_taken:.2f} microseconds")
                 except Exception as e:
-                    logging.error(f"客户端 {client_id} 密钥协商失败: {str(e)}")
+                    logging.error(f"Client {client_id} key exchange failed: {str(e)}")
         
         # 运行多轮聚合
         for round_num in range(self.num_rounds):
@@ -208,28 +194,26 @@ class SecureAggregationSystem:
         }
 
 if __name__ == "__main__":
-    # 创建系统实例并运行
-    num_clients = 2  # 可以修改客户端数量
-    num_rounds = 1   # 可以修改聚合轮次
+    num_clients = 2  
+    num_rounds = 1   
     system = SecureAggregationSystem(num_clients, num_rounds)
     
-    # 运行系统并获取性能统计
     stats = system.run_system()
     
     # 打印总体性能统计
-    print("\n系统整体性能统计:")
-    print(f"初始密钥协商总时间: {stats['key_exchange_total_time']:.2f} 微秒")
-    print(f"初始密钥协商平均时间: {stats['key_exchange_avg_time']:.2f} 微秒")
-    print(f"系统总运行时间: {stats['total_system_time']:.2f} 微秒")
+    print("\nSystem Overall Performance Statistics:")
+    print(f"Total Key Exchange Time: {stats['key_exchange_total_time']:.2f} microseconds")
+    print(f"Average Key Exchange Time: {stats['key_exchange_avg_time']:.2f} microseconds")
+    print(f"Total System Run Time: {stats['total_system_time']:.2f} microseconds")
     
     # 打印每轮统计
     print("\n各轮次性能统计:")
     for round_stat in stats['round_stats']:
-        print(f"\n第 {round_stat['round_number']} 轮:")
-        print(f"梯度加密总时间: {round_stat['encryption_total_time']:.2f} 微秒")
-        print(f"梯度加密平均时间: {round_stat['encryption_avg_time']:.2f} 微秒")
-        print(f"梯度聚合时间: {round_stat['aggregation_time']:.2f} 微秒")
-        print(f"掩码更新总时间: {round_stat['mask_update_total_time']:.2f} 微秒")
-        print(f"掩码更新平均时间: {round_stat['mask_update_avg_time']:.2f} 微秒")
-        print(f"本轮总时间: {round_stat['round_total_time']:.2f} 微秒")
-        print(f"当前总运行时间: {round_stat['current_system_time']:.2f} 微秒")
+        print(f"\nRound {round_stat['round_number']}:")
+        print(f"Gradient Encryption Total Time: {round_stat['encryption_total_time']:.2f} microseconds")
+        print(f"Gradient Encryption Average Time: {round_stat['encryption_avg_time']:.2f} microseconds")
+        print(f"Gradient Aggregation Time: {round_stat['aggregation_time']:.2f} microseconds")
+        print(f"Mask Update Total Time: {round_stat['mask_update_total_time']:.2f} microseconds")
+        print(f"Mask Update Average Time: {round_stat['mask_update_avg_time']:.2f} microseconds")
+        print(f"Round Total Time: {round_stat['round_total_time']:.2f} microseconds")
+        print(f"Current System Run Time: {round_stat['current_system_time']:.2f} microseconds")
